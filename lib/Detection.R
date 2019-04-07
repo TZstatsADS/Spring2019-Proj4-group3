@@ -22,22 +22,22 @@ Detection <- function(cur_token){
                  "grepl(pattern = '(.)\\1{2,}', cur_token)",
                  # Rule 5: The number of uppercase characters in a string is greater than the number of lowercase characters,
                  #         and the number of uppercase characters is less than the total number of characters in the string
-                 "(str_count(cur_token, pattern = '[A-Z]') > str_count(cur_token, pattern = '[a-z]'))
-                 & (str_count(cur_token, pattern = '[A-Z]') < str_count(cur_token, pattern = '[:graph:]'))",
+                 "((str_count(cur_token, pattern = '[A-Z]') > str_count(cur_token, pattern = '[a-z]'))
+                 & (str_count(cur_token, pattern = '[A-Z]') < str_count(cur_token, pattern = '[:graph:]')))",
                  # Rule 6: All the characters in a string are alphabetic,
                  #         and the number of consonants in the string is greater than 8 times the number of vowels in the string,
                  #         or vice-versa
-                 "(grepl(pattern = '^[:alpha:]+$', cur_token))
+                 "((grepl(pattern = '^[:alpha:]+$', cur_token))
                  & ((str_count(cur_token, pattern = '[^aeiouAEIOU]') > 8*str_count(cur_token, pattern = '[aeiouAEIOU]'))
-                 | (str_count(cur_token,pattern='[aeiouAEIOU]') > 8*str_count(cur_token,pattern='[^aeiouAEIOU]')))",
+                 | (str_count(cur_token,pattern='[aeiouAEIOU]') > 8*str_count(cur_token,pattern='[^aeiouAEIOU]'))))",
                  # Rule 7: There are four or more consecutive vowels in the string
                  #         or five or more consecutive consonants in the string
-                 "(grepl(pattern = '[aeiouAEIOU]{4,}', cur_token))
-                 | (grepl(pattern = '[^aeiouAEIOU]{5,}', cur_token))",
+                 "((grepl(pattern = '[aeiouAEIOU]{4,}', cur_token))
+                 | (grepl(pattern = '[^aeiouAEIOU]{5,}', cur_token)))",
                  # Rule 8: The first and last characters in a string are both lowercase
                  #         and any other character is uppercase
-                 "(grepl('^[a-z].*[a-z]$', cur_token))
-                 & (grepl('[A-Z]', substr(cur_token, 2, nchar(cur_token)-1)))")
+                 "((grepl('^[a-z].*[a-z]$', cur_token))
+                 & (grepl('[A-Z]', substr(cur_token, 2, nchar(cur_token)-1))))")
   
   while((if_clean == TRUE)&now<=length(rule_list)){
     if(eval(parse(text = rule_list[now]))){
