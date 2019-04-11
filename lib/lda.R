@@ -1,4 +1,4 @@
-get.dtm <- function(text.data, unique.only = F){
+get.dtm <- function(text.data, remove.unique = F){
   corpus = VCorpus(VectorSource(text.data))
   dtm = DocumentTermMatrix(corpus, control = list(
     tolower = TRUE,
@@ -7,7 +7,7 @@ get.dtm <- function(text.data, unique.only = F){
     removeNumbers = FALSE, 
     removePunctuation = FALSE,
     stripWhitespace = TRUE))
-  if (unique.only == T){
+  if (remove.unique == T){
     non_zero_entries = unique(DTM$i) #omits zero entries
     dtm = dtm[non_zero_entries,]
   }

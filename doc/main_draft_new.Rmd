@@ -49,20 +49,20 @@ library(topicmodels)
 library(tm)
 library(tidytext)
 library(dplyr)
-install.packages("ldatuning")
 library(ldatuning)
 library(SnowballC)  
 library(NLP)
 library(tm)
+library(Hmisc)
 
 source('../lib/Detection.R')
-#source('../lib/LDA.R')
+source('../lib/candidate_vector.R')
 
 ```
 
 # Step 2 - Error detection
 
-Error detection is the first step of post-processing, based on the Tessearct OCR output. First of all, we need to detect errors, or *incorrectly processed words*. For that we use [Rule-based techniques](http://webpages.ursinus.edu/akontostathis/KulpKontostathisFinal.pdf), specifically rules are in the section 2.2. The code takes 100 documents and splits them into two lists sized 100 each: one contains correct text elements, the other contains erroneous text elements. 
+Error detection is the first step of post-processing, based on the Tessearct OCR output. First of all, we need to detect errors, or *incorrectly processed words*. For that we use [Rule-based techniques](http://webpages.ursinus.edu/akontostathis/KulpKontostathisFinal.pdf), specifically rules are in the section 2.2. The code takes 100 documents, creates a single big corpus, which is splitted into two: one contains correct text elements, the other contains erroneous text elements. Only inuque tockens are left for alanysis to reduce the amount of computation.
 
 ```{r}
 file.name.vector <- list.files("../data/ground_truth")
@@ -71,68 +71,55 @@ ground.truth.all = c()
 for (doc in 1:length(file.name.vector)){
   ground.truth.text.vector = readLines(paste("../data/ground_truth/", file.name.vector[doc],sep=""))
   ground.truth.all = c(ground.truth.all, ground.truth.text.vector)
+  ground.truth.all.text = paste(ground.truth.all, collapse = " ")
 }
 
-save(ground.truth.all, file = "../output/ground_truth_full_data.Rdata")
+save(ground.truth.all.text, file = "../output/ground_truth_full_data.Rdata")
 
 ocr.all = c()
 for (doc in 1:length(file.name.vector)){
-  tesseract.text.vector = readLines(paste("../data/tesseract/", file.name.vector[doc],sep=""))
-  tesseract.text.unit = paste(tesseract.text.vector, collapse = " ")
-  ocr.all = c(ocr.all, tesseract.text.unit)
+  ocr.text.vector = readLines(paste("../data/tesseract/", file.name.vector[doc],sep =""))
+  ocr.all = c(ocr.all, ocr.text.vector)
+  ocr.all.text = paste(ocr.all, collapse = " ")
 }
 
-save(ocr.all, file = "../output/tesseract_full_data.Rdata")
+save(ocr.all.text, file = "../output/tesseract_full_data.Rdata")
 
-tesseract.error.all = c()
-tesseract.correct.all = c()
-for (doc in 1:length(ocr.all)){
-  tesseract.tokens = str_split(ocr.all," ")[[doc]]
-  tesseract.boolean.if.clean = unlist(lapply(tesseract.tokens,Detection)) 
-  tesseract.error = tesseract.tokens[!tesseract.boolean.if.clean]
-  tesseract.error.unit = paste(tesseract.error, collapse = " ")
-  tesseract.correct = tesseract.tokens[tesseract.boolean.if.clean]
-  tesseract.correct.unit = paste(tesseract.correct, collapse = " ")
-  tesseract.error.all = c(tesseract.error.all, tesseract.error.unit)
-  tesseract.correct.all = c(tesseract.correct.all, tesseract.correct.unit)
-}
+ocr.tokens = str_split(ocr.all.text," ")
+ocr.tokens.unique = unique(ocr.tokens[[1]])
+ocr.boolean.if.clean = lapply(ocr.tokens.unique,Detection)
+ocr.boolean.if.clean = unlist(ocr.boolean.if.clean)
+ocr.error = ocr.tokens.unique[!ocr.boolean.if.clean] #9418
+ocr.correct = ocr.tokens.unique[ocr.boolean.if.clean]
 
-save(tesseract.error.all, file = "../output/tesseract_error_100_docs.Rdata")
-save(tesseract.correct.all, file = "../output/tesseract_correct_100_docs.Rdata")
+save(ocr.error, file = "../output/tesseract_error.Rdata")
+save(ocr.correct, file = "../output/tesseract_correct.Rdata")
 ```
 # Step 4 - Error correction
 
 To correct errors detected in the previous step, we followed the paper [Topic models](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=4377099). Error correction algorithm considered in the paper consists of two models: a topic model that provides information about word probabilities and OCR model that represents the probability of character errors. For each error word we compute a vector of candidates to substitute the erroneous word and pick the one that provides the best score according to the formula proposed in the paper.
 
 ```{r}
-load("../output/tesseract_error_100_docs.Rdata") #tesseract.error.all
-load("../output/tesseract_correct_100_docs.Rdata") #tesseract.correct.all
-load("../output/tesseract_full_data.Rdata") #ocr.all
-load("../output/ground_truth_full_data.Rdata") #ground.truth.all
+load("../output/tesseract_error.Rdata") #ocr.error
+load("../output/tesseract_correct.Rdata") #ocr.correct
+load("../output/tesseract_full_data.Rdata") #ocr.all.text
+load("../output/ground_truth_full_data.Rdata") #ground.truth.all.text
 
-#tressarect.correct.words = tesseract.correct.all
-#tressarect.correct.text = paste0(tressarect.correct.words, collapse = " ")
+dictionary = unique(unlist(strsplit(ground.truth.all.text, split = " ")))
 
-dictionary = unique(unlist(strsplit(ground.truth.all, split = " ")))
-get.candidate.vector(error.word, dictionary)
+#There is 15% intersection between dictionary and error vector. Removing those.
 
-list.tokens.error = c()
-for (doc in 1:length(tesseract.correct.all)){
-  token.error.word = str_split(tesseract.error.all[doc], " ") 
-  list.tokens.error[[length(list.tokens.error) + 1]] = token.error.word
-}
+not.in.dictionary.boolean = which(ocr.error %nin% dictionary)
+ocr.true.error = ocr.error[not.in.dictionary.boolean] #8046
 
-#!!!!time consuming, even with length list.tokens.error[1]
-list.candidates = c()
-for (doc in 1:length(list.tokens.error)){
-  for(word in 1:length(list.tokens.error[[doc]][[1]])){
-    candidates.list = get.candidate.vector(list.tokens.error[[doc]][[1]][word], dictionary)
-    list.candidates[[length(list.candidates) + 1]] = candidates.list
-  }
-}
+#using of grid provides many-fold time optimivation vs for-loop (0.07sec vs 10sec/error.word)
+tic  = Sys.time()
+candidates.list = lapply(ocr.true.error, get.candidate.vector, dictionary = dictionary)
+toc = Sys.time()
+toc-tic 
 
-#example
-candidates.list.1 = get.candidate.vector(list.tokens.error[[1]][[1]][15], dictionary)
+candidates.list.nonempty = candidates.list[lapply(candidates.list, length)>0]
+length(candidates.list.nonempty) #3875
 ```
 
 
@@ -161,23 +148,22 @@ result <- FindTopicsNumber(
 
 LDA is trained on the whole text data available at once.
 ```{r}
-n.topics = 12 #optimal number of clusters based on the graph above
-dtm.ground.truth = get.dtm(ground.truth.all) #sparsity = 100% as non unique entries are removed (~7%)
+n.topics = 12 #optimal number of clusters based on the result above
+dtm.ground.truth = get.dtm(ground.truth.all.text) 
 lda = LDA(dtm.ground.truth, k = n.topics, method = "VEM", control = list(seed = 2019))
 ```
 
 
 ```{r}
-dtm.tresseract.1 = get.dtm(tesseract.correct.all[1])
-
 #P(t_k) computed by applying the trained topic model to the correctly recognized words in the document. 
-probability.topic.term = posterior(lda, dtm.tresseract.1) 
-score.gamma = probability.topic.term$topics
+dtm.ocr = get.dtm(ocr.all.text)
+probability.topic.term = posterior(lda, dtm.ocr) 
+probability.topic = probability.topic.term$topics
 ```
 
 ```{r}
 #P(w|t_k) is probability of a word from candidate vector given the topic, computed using beta matrix.
-#beta.matrix = tidy(lda, matrix = "beta")
+beta.matrix = tidy(lda, matrix = "beta")
 beta.matrices = c()
 for (i in 1:length(candidates.list.1)){
   candidate.matrix = beta.matrix %>% filter(term == candidates.list.1[i]) %>% arrange(topic)
