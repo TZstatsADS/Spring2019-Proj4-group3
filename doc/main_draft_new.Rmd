@@ -57,6 +57,8 @@ library(Hmisc)
 
 source('../lib/Detection.R')
 source('../lib/candidate_vector.R')
+source('../lib/dtm.R')
+source('../lib/get_probability_word.R')
 
 ```
 
@@ -120,6 +122,9 @@ toc-tic
 
 candidates.list.nonempty = candidates.list[lapply(candidates.list, length)>0]
 length(candidates.list.nonempty) #3875
+
+save(ocr.error, file = "../output/candidates_list.Rdata")
+save(ocr.correct, file = "../output/candidates_list_nonempty.Rdata")
 ```
 
 
@@ -158,28 +163,39 @@ lda = LDA(dtm.ground.truth, k = n.topics, method = "VEM", control = list(seed = 
 #P(t_k) computed by applying the trained topic model to the correctly recognized words in the document. 
 dtm.ocr = get.dtm(ocr.all.text)
 probability.topic.term = posterior(lda, dtm.ocr) 
-probability.topic = probability.topic.term$topics
+probability.topic = probability.topic.term$topics #vector 12 probabilities
 ```
 
 ```{r}
 #P(w|t_k) is probability of a word from candidate vector given the topic, computed using beta matrix.
 beta.matrix = tidy(lda, matrix = "beta")
-beta.matrices = c()
-for (i in 1:length(candidates.list.1)){
-  candidate.matrix = beta.matrix %>% filter(term == candidates.list.1[i]) %>% arrange(topic)
-  beta.matrices[[length(beta.matrices) + 1]] = candidate.matrix
+
+tic  = Sys.time()
+list.scores.word = c()
+for (i in 1:length(candidates.list.nonempty)){
+  candidate.list = lapply(candidates.list.nonempty[[i]], get.probability.word, beta.matrix = beta.matrix)
+  score = sum(candidate.matrix$beta * probability.topic)
+  list.scores.word[[length(list.scores.word) + 1]] = candidate.list
 }
 
-beta.matrices
+toc = Sys.time()
+toc-tic #2.3 min
+
+length(list.scores.word)
+sum(list.scores.word[[5]][[2]]*probability.topic)
+
 ```
 
 ```{r}
 #P(w) = sum(P(w|t_k)*P(t_k))
-
+#it is best to compute score at once, need cm prob score.
 list.scores = c()
-for (i in 1:length(score.beta)){
-  score = sum(beta.matrices[[i]][3] * score.gamma)
-  list.scores = c(list.scores, score)
+for (i in 1:length(list.scores.word)){
+  for (j in 1:length(list.scores.word[[i]]))
+  score = sum(list.scores.word[[i]][[j]] * probability.topic)
+  list.scores[[length(list.scores) + 1]] = score
 }
+
+length(list.scores)
 ```
 
