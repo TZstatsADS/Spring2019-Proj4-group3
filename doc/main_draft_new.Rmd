@@ -168,6 +168,8 @@ result <- FindTopicsNumber(
   verbose = TRUE
 )
 
+FindTopicsNumber_plot(result)
+
 ```
 
 LDA is trained on the whole text data available at once.

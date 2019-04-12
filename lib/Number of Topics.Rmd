@@ -33,4 +33,10 @@ result <- FindTopicsNumber(
   verbose = TRUE
 )
 
+
 ```
+
+```{r}
+FindTopicsNumber_plot(result)
+```
+
