@@ -59,6 +59,18 @@ source('../lib/Detection.R')
 source('../lib/candidate_vector.R')
 source('../lib/dtm.R')
 source('../lib/get_probability_word.R')
+source('../lib/candidate_word_score.R')
+source('../lib/confusion_matrix.R')
+
+#outputs steps 2,3
+
+load("../output/tesseract_error.Rdata") #ocr.error
+load("../output/tesseract_correct.Rdata") #ocr.correct
+load("../output/tesseract_full_data.Rdata") #ocr.all.text
+load("../output/ground_truth_full_data.Rdata") #ground.truth.all.text
+load("../output/candidates_list.Rdata") #candidates.list
+load("../output/candidates_list_nonempty.Rdata") #candidates.list.nonempty
+load("../output/ocr_true_error_nonempty.Rdata") #ocr.true.error.nonempty
 
 ```
 
@@ -97,7 +109,7 @@ ocr.correct = ocr.tokens.unique[ocr.boolean.if.clean]
 save(ocr.error, file = "../output/tesseract_error.Rdata")
 save(ocr.correct, file = "../output/tesseract_correct.Rdata")
 ```
-# Step 4 - Error correction
+# Step 3 - Error correction
 
 To correct errors detected in the previous step, we followed the paper [Topic models](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=4377099). Error correction algorithm considered in the paper consists of two models: a topic model that provides information about word probabilities and OCR model that represents the probability of character errors. For each error word we compute a vector of candidates to substitute the erroneous word and pick the one that provides the best score according to the formula proposed in the paper.
 
@@ -119,12 +131,19 @@ tic  = Sys.time()
 candidates.list = lapply(ocr.true.error, get.candidate.vector, dictionary = dictionary)
 toc = Sys.time()
 toc-tic 
-
+ocr.true.error.nonempty = ocr.true.error[lapply(candidates.list, length)>0]
+length(ocr.true.error.nonempty) #3875
 candidates.list.nonempty = candidates.list[lapply(candidates.list, length)>0]
 length(candidates.list.nonempty) #3875
 
-save(ocr.error, file = "../output/candidates_list.Rdata")
-save(ocr.correct, file = "../output/candidates_list_nonempty.Rdata")
+save(candidates.list, file = "../output/candidates_list.Rdata")
+save(candidates.list.nonempty, file = "../output/candidates_list_nonempty.Rdata")
+save(ocr.true.error.nonempty, file = "../output/ocr_true_error_nonempty.Rdata")
+```
+
+```{r}
+library(R.oo)
+cm = confusion_count_num("../data/ground_truth/group1_00000005.txt", "../data/trasserect/group1_00000005.txt")
 ```
 
 
@@ -164,11 +183,12 @@ lda = LDA(dtm.ground.truth, k = n.topics, method = "VEM", control = list(seed = 
 dtm.ocr = get.dtm(ocr.all.text)
 probability.topic.term = posterior(lda, dtm.ocr) 
 probability.topic = probability.topic.term$topics #vector 12 probabilities
+beta.matrix = tidy(lda, matrix = "beta") #restart R if "Error: No tidy method for objects of class LDA_VEM", this is package bug
 ```
 
 ```{r}
+#Temp
 #P(w|t_k) is probability of a word from candidate vector given the topic, computed using beta matrix.
-beta.matrix = tidy(lda, matrix = "beta")
 
 tic  = Sys.time()
 list.scores.word = c()
@@ -187,6 +207,7 @@ sum(list.scores.word[[5]][[2]]*probability.topic)
 ```
 
 ```{r}
+#temp
 #P(w) = sum(P(w|t_k)*P(t_k))
 #it is best to compute score at once, need cm prob score.
 list.scores = c()
@@ -197,5 +218,18 @@ for (i in 1:length(list.scores.word)){
 }
 
 length(list.scores)
+```
+
+```{r}
+confusion.prob = 1
+candidates.list.nonempty[[15]]
+candidate.word.score = lapply(candidates.list.nonempty[[15]], candidate.word.score, probability.topic = probability.topic, confusion.prob = confusion.prob, beta.matrix = beta.matrix)
+candidate.word.score.max = candidates.list.nonempty[[15]][which.max(candidate.word.score)]
+
+ocr.true.error.nonempty[[15]]
+text  = c("i", "worklng", "worklng", "a", "lot")
+
+corrected.text = gsub(ocr.true.error.nonempty[[15]], candidate.word.score.max, as.character(text))
+ocr.all.text[1:100]
 ```
 
