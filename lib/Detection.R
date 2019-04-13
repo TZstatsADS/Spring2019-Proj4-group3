@@ -30,6 +30,10 @@ Detection <- function(cur_token){
                  # [1] TRUE
                  # > grepl(pattern = '(.)\\1{2,}', "cool")
                  # [1] FALSE
+                 # > grepl(pattern = '(.)\\1{2,}', "great!!!")
+                 # [1] TRUE
+                 # > grepl(pattern = '(.)\\1{2,}', "great!!")
+                 # [1] FALSE
                  
                  # Rule 5: The number of uppercase characters in a string is greater than the number of lowercase characters,
                  #         and the number of uppercase characters is less than the total number of characters in the string
