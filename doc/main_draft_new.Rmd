@@ -171,7 +171,7 @@ ocr_list <- paste0(tesseract_loc, file_names)
 ```
 ```{r}
 #cm = confusion_count_num("../data/ground_truth/group1_00000005.txt", "../data/tesseract/group1_00000005.txt")
-cm = confusion_count_num(truth_list, ocr_list, letterlist)
+confusion.prob = confusion_count_num(truth_list, ocr_list, letterlist)
 #print(cm)
 ```
 
@@ -235,6 +235,10 @@ toc-tic #2.3 min
 length(list.scores.word)
 sum(list.scores.word[[5]][[2]]*probability.topic)
 
+```
+
+```{r}
+print(letterlist)
 ```
 
 ```{r}
