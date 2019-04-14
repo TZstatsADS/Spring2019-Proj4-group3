@@ -154,6 +154,10 @@ save(candidates.list, file = "../output/candidates_list.Rdata")
 save(candidates.list.nonempty, file = "../output/candidates_list_nonempty.Rdata")
 save(ocr.true.error.nonempty, file = "../output/ocr_true_error_nonempty.Rdata")
 ```
+```{r}
+source('../lib/get_letterlist.R')
+letterlist = get_letterlist(ocr.true.error.nonempty, candidates.list.nonempty)
+```
 
 ```{r}
 source('../lib/confusion_matrix.R')
@@ -167,7 +171,7 @@ ocr_list <- paste0(tesseract_loc, file_names)
 ```
 ```{r}
 #cm = confusion_count_num("../data/ground_truth/group1_00000005.txt", "../data/tesseract/group1_00000005.txt")
-cm = confusion_count_num(truth_list, ocr_list)
+cm = confusion_count_num(truth_list, ocr_list, letterlist)
 #print(cm)
 ```
 
@@ -240,7 +244,7 @@ ocr.final.output = ocg.correct.text(candidates.list.nonempty, ocr.true.error.non
 save(ocr.final.output, file = "../output/ocr_final_output.Rdata")
 
 
-error.corrected.vec = ocr.correct(candidates.list.nonempty, probability.topic, confusion.prob, beta.matrix)
+error.corrected.vec = ocr.correct(ocr.true.error.nonempty, candidates.list.nonempty, probability.topic, confusion.prob, beta.matrix)
 ocr.all.text.vec = unlist(str_split(paste(ocr.all.text, collapse = " "), " "))
 
 for (i in 1:length(ocr.all.text.vec)){
