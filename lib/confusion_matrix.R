@@ -1,18 +1,26 @@
 letterlist_add_on <- function(letterlist, filelist) {
+  punctuation = list()
   for (file in filelist) {
     lines = readLines(file, warn=FALSE, encoding = "UTF-8")
-    add = unique(unlist(strsplit(lines,"")))
+    add = unique(unlist(strsplit(lines, "")))
+    punctuation = unique(c(punctuation, add))
   }
   
-  add = add[!(add%in%letterlist)]
-  add_int = charToInt(add)
-  if (NA%in%add_int) {
-    ind = which(is.na(add_int))
-    add = add[-ind]
+  punctuation = punctuation[!(punctuation%in%letterlist)]
+  punctuation_int = charToInt(punctuation)
+  # remove NAs
+  if (NA%in%punctuation_int) {
+    ind = which(is.na(punctuation_int))
+    punctuation = punctuation[-ind]
+    punctuation_int = punctuation_int[-ind]
   }
+  # remove characters with ascii code <= 32
+  ind = which(punctuation_int<=32)
+  punctuation = punctuation[-ind]
 
-  return (add)
+  return (unlist(punctuation))
 }
+
 
 confusion_count_num <- function(truth_list, ocr_list) {
   lowerletters = c("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z")
@@ -22,15 +30,25 @@ confusion_count_num <- function(truth_list, ocr_list) {
   
   punctuation = letterlist_add_on(letters, truth_list)
   letterlist = c(letters, punctuation)
+  #print(letterlist)
   
   d = length(letterlist)
   mat = matrix(0, nrow=d, ncol=d)
-  
+  letter_mat = rep(0, d)
+    
   # iterate through each file
   for (index in 1:length(truth_list)) {
     # read files
     truth_txt = readLines(truth_list[index], warn=FALSE, encoding="UTF-8")
     ocr_txt = readLines(ocr_list[index], warn=FALSE, encoding="UTF-8")
+    
+    # count the total number of appearence of each character in file
+    file_all_characters = unlist(strsplit(truth_txt, ""))
+    #print(file_all_characters)
+    for (char in file_all_characters) {
+      ind = which(letterlist==char)
+      letter_mat[ind] = letter_mat[ind] + 1
+    }
     
     # split files by lines
     truth_lines = unlist(strsplit(truth_txt, "\n"))
@@ -69,15 +87,19 @@ confusion_count_num <- function(truth_list, ocr_list) {
   }
 
   #removed_vec = rowSums(mat)==0&colSums(mat)==0
+  #print(removed_vec)
   #letterlist = letterlist[!removed_vec]
   #mat = mat[!removed_vec,!removed_vec]
   
+  
   rownames(mat) <- letterlist
   colnames(mat) <- letterlist
-  print(mat)
+  #print(letter_mat)
+  #print(mat)
   
   #mat = mat/colSums(mat)
   #mat[is.na(mat)] = 0
+  # smooth zero entry of the matrix
   smooth_mat = mat
   for (i in 1:d) {
     for (j in 1:d) {
@@ -86,13 +108,13 @@ confusion_count_num <- function(truth_list, ocr_list) {
       }
     }
   }
-  prob_mat = smooth_mat/colSums(smooth_mat)
-  #prob_mat = smooth_mat
-  #for (i in 1:d) {
-  #  for (j in 1:d) {
-  #    prob_mat[i,j] = smooth_mat[i,j]/colSums(smooth_mat)[j]
-  #  }
-  #}
+  
+  prob_mat = smooth_mat
+  for (i in 1:d) {
+    for (j in 1:d) {
+      prob_mat[i,j] = smooth_mat[i,j]/letter_mat[j]
+    }
+  }
   
   #new_list <- list("mat" = prob_mat, "letterlist" = letterlist)
   #return(new_list)
