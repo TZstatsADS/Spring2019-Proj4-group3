@@ -1,36 +1,36 @@
-letterlist_add_on <- function(letterlist, filelist) {
-  punctuation = list()
-  for (file in filelist) {
-    lines = readLines(file, warn=FALSE, encoding = "UTF-8")
-    add = unique(unlist(strsplit(lines, "")))
-    punctuation = unique(c(punctuation, add))
-  }
-  
-  punctuation = punctuation[!(punctuation%in%letterlist)]
-  punctuation_int = charToInt(punctuation)
-  # remove NAs
-  if (NA%in%punctuation_int) {
-    ind = which(is.na(punctuation_int))
-    punctuation = punctuation[-ind]
-    punctuation_int = punctuation_int[-ind]
-  }
-  # remove characters with ascii code <= 32
-  ind = which(punctuation_int<=32)
-  punctuation = punctuation[-ind]
+# letterlist_add_on <- function(letterlist, filelist) {
+#   punctuation = list()
+#   for (file in filelist) {
+#     lines = readLines(file, warn=FALSE, encoding = "UTF-8")
+#     add = unique(unlist(strsplit(lines, "")))
+#     punctuation = unique(c(punctuation, add))
+#   }
+#   
+#   punctuation = punctuation[!(punctuation%in%letterlist)]
+#   punctuation_int = charToInt(punctuation)
+#   # remove NAs
+#   if (NA%in%punctuation_int) {
+#     ind = which(is.na(punctuation_int))
+#     punctuation = punctuation[-ind]
+#     punctuation_int = punctuation_int[-ind]
+#   }
+#   # remove characters with ascii code <= 32 '\n'
+#   ind = which(punctuation_int<=32)
+#   punctuation = punctuation[-ind]
+# 
+#   return (unlist(punctuation))
+# }
 
-  return (unlist(punctuation))
-}
 
-
-confusion_count_num <- function(truth_list, ocr_list) {
-  lowerletters = c("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z")
-  upperletters = toupper(lowerletters)
-  numbers = c("0","1","2","3","4","5","6","7","8","9")
-  letters = c(lowerletters, upperletters, numbers)
-  
-  punctuation = letterlist_add_on(letters, truth_list)
-  letterlist = c(letters, punctuation)
-  #print(letterlist)
+confusion_count_num <- function(truth_list, ocr_list, letterlist) {
+  # lowerletters = c("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z")
+  # upperletters = toupper(lowerletters)
+  # numbers = c("0","1","2","3","4","5","6","7","8","9")
+  # letters = c(lowerletters, upperletters, numbers)
+  # 
+  # punctuation = letterlist_add_on(letters, truth_list)
+  # letterlist = c(letters, punctuation)
+  # print(letterlist)
   
   d = length(letterlist)
   mat = matrix(0, nrow=d, ncol=d)
