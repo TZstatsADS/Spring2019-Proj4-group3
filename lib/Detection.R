@@ -24,7 +24,8 @@ Detection <- function(cur_token){
                  # Rule 4: There are three or more identical characters in a row in a string
                  "grepl(pattern = '(.)\\1{2,}', cur_token)",
                  # "." stands for any character, "\\1" refers to the first identical characters,
-                 # and "{2,}" means that there are at least two more the same ones after that (the first identical characters)
+                 # and "{2,}" means that there are at least two more the same ones after that (the first identical characters).
+                 # In other words, there are at least three or more in total.
                  # For example,
                  # > grepl(pattern = '(.)\\1{2,}', "coool")
                  # [1] TRUE
@@ -46,15 +47,15 @@ Detection <- function(cur_token){
                  #         and the number of consonants in the string is greater than 8 times the number of vowels in the string,
                  #         or vice-versa
                  "((grepl(pattern = '^[:alpha:]+$', cur_token))
-                 & ((str_count(cur_token, pattern = '[^aeiouAEIOU]') > 8*str_count(cur_token, pattern = '[aeiouAEIOU]'))
-                 | (str_count(cur_token, pattern = '[aeiouAEIOU]') > 8*str_count(cur_token,pattern = '[^aeiouAEIOU]'))))",
+                 & ((str_count(cur_token, pattern = '[B-DF-HJ-NP-TV-Zb-df-hj-np-tv-z]') > 8*str_count(cur_token, pattern = '[aeiouAEIOU]'))
+                 | (str_count(cur_token, pattern = '[aeiouAEIOU]') > 8*str_count(cur_token,pattern = '[B-DF-HJ-NP-TV-Zb-df-hj-np-tv-z]'))))",
                  # "^" matches the starting position, "$" matches the ending position.
                  # "[:alpha:]" means Alphabetic characters, and "+" stands for repeating one or more times
                  
                  # Rule 7: There are four or more consecutive vowels in the string
                  #         or five or more consecutive consonants in the string
                  "((grepl(pattern = '[aeiouAEIOU]{4,}', cur_token))
-                 | (grepl(pattern = '[^aeiouAEIOU]{5,}', cur_token)))",
+                 | (grepl(pattern = '[B-DF-HJ-NP-TV-Zb-df-hj-np-tv-z]{5,}', cur_token)))",
                  # "[aeiouAEIOU]{4,}" refers to four or more consecutive vowels in the string
                  # For example,
                  # > grepl(pattern = '[aeiouAEIOU]{4,}', "cooool")
@@ -62,9 +63,9 @@ Detection <- function(cur_token){
                  # > grepl(pattern = '[aeiouAEIOU]{4,}', "coool")
                  # [1] FALSE
                  # Similarly,
-                 # > grepl(pattern = '[^aeiouAEIOU]{5,}', "coolllll")
+                 # > grepl(pattern = '[B-DF-HJ-NP-TV-Zb-df-hj-np-tv-z]{5,}', "coolllll")
                  # [1] TRUE
-                 # > grepl(pattern = '[^aeiouAEIOU]{5,}', "coollll")
+                 # > grepl(pattern = '[B-DF-HJ-NP-TV-Zb-df-hj-np-tv-z]{5,}', "coollll")
                  # [1] FALSE
                  
                  # Rule 8: The first and last characters in a string are both lowercase
