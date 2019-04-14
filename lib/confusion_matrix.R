@@ -28,30 +28,39 @@ confusion_count_num <- function(truth_list, ocr_list) {
   
   for (index in 1:length(truth_list)) {
     truth_txt = readLines(truth_list[index], warn=FALSE, encoding="UTF-8")
-    ocr_txt = readLines(truth_list[index], warn=FALSE, encoding="UTF-8")
+    ocr_txt = readLines(ocr_list[index], warn=FALSE, encoding="UTF-8")
     
     truth_words = unlist(strsplit(truth_txt, " "))
     ocr_words = unlist(strsplit(ocr_txt, " "))
     
+    if (length(truth_words)!=length(ocr_words)) {
+      print(index)
+    }
     ## deal with mismatch
     
     # j = 1
     for (i in 1:length(truth_words)) {
       if ((nchar(truth_words[i])!=nchar(ocr_words[i]))) {
-        print("1")
+        #print("1")
         next;
       } 
-      
-      truth_char = strsplit(truth_words[i], "")
-      ocr_char = strsplit(ocr_words[i], "")
-      for (k in 1:length(truth_char)) {
-        truth_ind = which(letterlist==truth_char[k])
-        ocr_ind = which(letterlist==ocr_char[k])
+      #print(truth_words[i])
+      #print(ocr_words[i])
+      #truth_char = strsplit(truth_words[i], "")
+      #ocr_char = strsplit(ocr_words[i], "")
+      for (k in 1:nchar(truth_words[i])) {
+        #truth_char = substr(truth_words[i], k, k)
+        #ocr_char = substr(ocr_words[i], k, k)
+        #print(truth_char)
+        #print(ocr_char)
+        truth_ind = which(letterlist==substr(truth_words[i], k, k))
+        ocr_ind = which(letterlist==substr(ocr_words[i], k, k))
         mat[ocr_ind, truth_ind] = mat[ocr_ind, truth_ind] + 1
       }
     }
   }
-  
+  #print(mat)
+
   #removed_vec = rowSums(mat)==0&colSums(mat)==0
   #letterlist = letterlist[!removed_vec]
   #mat = mat[!removed_vec,!removed_vec]
@@ -72,7 +81,7 @@ confusion_count_num <- function(truth_list, ocr_list) {
   prob_mat = smooth_mat
   for (i in 1:d) {
     for (j in 1:d) {
-      prob_mat[i,j] = smooth_mat[i,j]/colSums(mat)[j]
+      prob_mat[i,j] = smooth_mat[i,j]/colSums(smooth_mat)[j]
     }
   }
   
