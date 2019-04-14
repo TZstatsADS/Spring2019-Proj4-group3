@@ -71,7 +71,7 @@ source('../lib/candidate_vector.R')
 source('../lib/dtm.R')
 source('../lib/get_probability_word.R')
 source('../lib/candidate_word_score.R')
-source('../lib/confusion_matrix.R')
+#source('../lib/confusion_matrix.R')
 
 #outputs steps 2,3
 
@@ -156,7 +156,19 @@ save(ocr.true.error.nonempty, file = "../output/ocr_true_error_nonempty.Rdata")
 ```
 
 ```{r}
-#cm = confusion_count_num("../data/ground_truth/group1_00000005.txt", "../data/trasserect/group1_00000005.txt")
+source('../lib/confusion_matrix.R')
+```
+```{r}
+ground_true_loc <- "../data/ground_truth/"
+tesseract_loc <- "../data/tesseract/"
+file_names <- list.files(ground_true_loc)
+truth_list <- paste0(ground_true_loc, file_names)
+ocr_list <- paste0(tesseract_loc, file_names)
+```
+```{r}
+#cm = confusion_count_num("../data/ground_truth/group1_00000005.txt", "../data/tesseract/group1_00000005.txt")
+cm = confusion_count_num(truth_list, ocr_list)
+#print(cm)
 ```
 
 
