@@ -131,13 +131,13 @@ load("../output/ground_truth_full_data.Rdata") #ground.truth.all.text
 dictionary = unique(unlist(strsplit(ground.truth.all.text, split = " ")))
 
 #option to substitute alphabet letters with all character symbols found in the ground truth: increase of execution time
-dictionary_letters = list()
-  for (i in 1:length(dictionary)) {
-    add = unique(unlist(strsplit(dictionary[[i]], "")))
-    dictionary_letters = unique(c(dictionary_letters, add))
-  }
+#dictionary_letters = list()
+ # for (i in 1:length(dictionary)) {
+#    add = unique(unlist(strsplit(dictionary[[i]], "")))
+#    dictionary_letters = unique(c(dictionary_letters, add))
+#  }
 
-dictionary_letters = sort(unlist(dictionary_letters))
+#dictionary_letters = sort(unlist(dictionary_letters))
 
 #Removing intersection between dictionary and error vector
 
