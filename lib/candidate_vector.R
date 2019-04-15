@@ -3,8 +3,8 @@
 
 #option is to add numbers to the grid
 
-get.candidate.vector = function(error.word, dictionary){
-
+get.candidate.vector = function(error.word, dictionary, dictionary_letters = letters){
+  # original version: expand.grid(letters.1 = dictionary_letters, letters.2 = dictionary_letters) 
   candidate.vector = c()
   letters.comb.grid = expand.grid(letters.1 = letters, letters.2 = letters)  
   error.word.vector = rep(error.word, nrow(letters.comb.grid))
