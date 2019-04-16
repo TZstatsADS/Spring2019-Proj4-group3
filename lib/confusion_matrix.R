@@ -97,6 +97,16 @@ confusion_count_num <- function(truth_list, ocr_list, letterlist) {
   #print(letter_mat)
   #print(mat)
   
+  # sum1 = 0
+  # sum2 = 0
+  # for (i in 1:d) {
+  #   sum2 = sum2 + letter_mat[i]
+  #   for (j in 1:d) {
+  #     sum1 = sum1 + mat[i, j]
+  #   }
+  # }
+  # print(sum1/sum2)
+  
   #mat = mat/colSums(mat)
   #mat[is.na(mat)] = 0
   # smooth zero entry of the matrix
