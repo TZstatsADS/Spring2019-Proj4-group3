@@ -23,7 +23,7 @@ candidate.word.score = function(ocr_word, candidate_list_nonempty, probability.t
     candidate_word = candidate_list_nonempty[i]
     prob.confusion.matrix = get.confusion.score(ocr_word, candidate_word, confusion.prob)
     prb.word.in.topic = get.probability.word(candidate_word, beta.matrix)
-    score = c(score, sum(prb.word.in.topic*probability.topic)*log(prob.confusion.matrix))
+    score = c(score, sum(prb.word.in.topic*probability.topic)*(prob.confusion.matrix))
   }
 
   return(unlist(score))
