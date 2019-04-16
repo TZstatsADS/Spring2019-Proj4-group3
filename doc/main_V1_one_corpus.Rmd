@@ -324,6 +324,8 @@ save(corrected.text, file = "../output/corrected_text.Rdata")
 
 # Step 4 - Performance Measure
 
+For performance measure, the two most common OCR accuracy measures are precision and recall. To be more specific, precision is the proportion of the correct number of correct items (i.e. both words and characters) and the number of items in OCR output. Recall means that the ratio of the number of correct items and the number of items in ground truth. Here, to compute the numbers, we just need to get the intersection part bewteen OCR output version (before and after improvement) and ground truth. In other words, the alignment in this case is not necessary.
+
 ```{r}
 
 load()
@@ -349,13 +351,16 @@ final.intersect.vec = vecsets::vintersect(tolower(ground.truth.vec), tolower(ocr
 #intersect_char
 
 ######
-ocr.final.vec.char = vecsets::vintersect(unlist(str_extract_all(ocr.final.vec, "[:graph:]")), unlist(str_extract_all(ground.truth.vec, "[:graph:]")))
+ocr.intersect.vec.char = vecsets::vintersect(unlist(str_extract_all(ocr.vec, "[:graph:]")), unlist(str_extract_all(ground.truth.vec, "[:graph:]")))
 
-ocr.vec.char = vecsets::vintersect(unlist(str_extract_all(ocr.vec, "[:graph:]")), unlist(str_extract_all(ground.truth.vec, "[:graph:]")))
+ocr.intersect.final.vec.char = vecsets::vintersect(unlist(str_extract_all(ocr.final.vec, "[:graph:]")), unlist(str_extract_all(ground.truth.vec, "[:graph:]")))
 
-length(ocr.final.vec.char)/length(ground.truth.vec.char)
+# "[:graph:]" refers to any character defined as a printable character except those defined as part of the space character class. In this way, we can split the vectors into characters.
 
-length(ocr.final.vec.char)/length(ocr.vec.char)
+#length(ocr.final.vec.char)/length(ground.truth.vec.char)
+
+#length(ocr.final.vec.char)/length(ocr.vec.char)
+
 ######
 
 # original.intersect.vec.char = 0
@@ -390,10 +395,10 @@ ocr.performance.table["word_wise_precision","ocr"] = length(original.intersect.v
 ocr.performance.table["word_wise_recall","final_ocr"] = length(final.intersect.vec)/length(ground.truth.vec)
 ocr.performance.table["word_wise_precision","final_ocr"] = length(final.intersect.vec)/length(ocr.vec)
 
-ocr.performance.table["character_wise_recall","ocr"] = length(ocr.vec.char)/length(ground.truth.vec.char)
-ocr.performance.table["character_wise_precision","ocr"] = length(ocr.vec.char)/length(ocr.vec.char)
-ocr.performance.table["character_wise_recall","final_ocr"] = length(ocr.final.vec.char)/length(ground.truth.vec.char)
-ocr.performance.table["character_wise_precision","final_ocr"] = length(ocr.final.vec.char)/length(ocr.vec.char)
+ocr.performance.table["character_wise_recall","ocr"] = length(ocr.intersect.vec.char)/length(ground.truth.vec.char)
+ocr.performance.table["character_wise_precision","ocr"] = length(ocr.intersect.vec.char)/length(ocr.vec.char)
+ocr.performance.table["character_wise_recall","final_ocr"] = length(ocr.intersect.final.vec.char)/length(ground.truth.vec.char)
+ocr.performance.table["character_wise_precision","final_ocr"] = length(ocr.intersect.final.vec.char)/length(ocr.vec.char)
 
 kable(ocr.performance.table, caption = "Summary of OCR performance")
 
