@@ -8,11 +8,13 @@ Term: Spring 2019
 
 + Team #
 + Team members
-	+ team member 1
-	+ team member 2
-	+ team member 3
-	+ team member 4
-	+ team member 5
+* Team # 3
+Team members
+* Dubova, Elena ed2801@columbia.edu
+* Ren, Claire xr2134@columbia.edu
+* Wang, Zixiao zw2513@columbia.edu
+* Wu, Qianqian qw2284@columbia.edu
+* Zhang, Zhicheng zz2555@columbia.edu
 
 + Project summary: In this project, we created an OCR post-processing procedure to enhance Tesseract OCR output. 
 	
