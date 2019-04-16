@@ -318,13 +318,15 @@ for (i in 1:length(ocr.all.text.vec)){
 }
 
 corrected.text = paste(ocr.all.text.vec, collapse = " ")
-save(corrected.text, file = "../corrected_text.Rdata")
+save(corrected.text, file = "../output/corrected_text.Rdata")
 
 ```
 
 # Step 4 - Performance Measure
 
 ```{r}
+
+load()
 #words
 ground.truth.vec = unlist(str_split(paste(ground.truth.all.text, collapse = " "), " "))
 ocr.vec = unlist(str_split(paste(ocr.all.text, collapse = " "), " "))
@@ -386,8 +388,8 @@ ocr.performance.table["word_wise_precision","ocr"] = length(original.intersect.v
 ocr.performance.table["word_wise_recall","final_ocr"] = length(final.intersect.vec)/length(ground.truth.vec)
 ocr.performance.table["word_wise_precision","final_ocr"] = length(final.intersect.vec)/length(ocr.vec)
 
-#ocr.performance.table["character_wise_recall","ocr"] = original.intersect.vec.char/length(ground.truth.vec.char)
-#ocr.performance.table["character_wise_precision","ocr"] = original.intersect.vec.char/length(ocr.vec.char)
+ocr.performance.table["character_wise_recall","ocr"] = length(ocr.vec.char)/length(ground.truth.vec.char)
+ocr.performance.table["character_wise_precision","ocr"] = length(ocr.vec.char)/length(ocr.vec.char)
 ocr.performance.table["character_wise_recall","final_ocr"] = length(ocr.final.vec.char)/length(ground.truth.vec.char)
 ocr.performance.table["character_wise_precision","final_ocr"] = length(ocr.final.vec.char)/length(ocr.vec.char)
 
