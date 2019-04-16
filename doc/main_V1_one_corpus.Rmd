@@ -132,19 +132,10 @@ load("../output/ground_truth_full_data.Rdata") #ground.truth.all.text
 
 dictionary = unique(unlist(strsplit(ground.truth.all.text, split = " ")))
 
-#option to substitute alphabet letters with all character symbols found in the ground truth: increase of execution time
-#dictionary_letters = list()
- # for (i in 1:length(dictionary)) {
-#    add = unique(unlist(strsplit(dictionary[[i]], "")))
-#    dictionary_letters = unique(c(dictionary_letters, add))
-#  }
-
-#dictionary_letters = sort(unlist(dictionary_letters))
-
 #Removing intersection between dictionary and error vector
 
 not.in.dictionary.boolean = which(ocr.error %nin% dictionary)
-ocr.true.error = ocr.error[not.in.dictionary.boolean] #5576
+ocr.true.error = ocr.error[not.in.dictionary.boolean] #5331
 length(ocr.true.error)
 #using of grid provides many-fold time optimivation vs for-loop (0.07sec vs 10sec/error.word)
 tic  = Sys.time()
@@ -152,9 +143,9 @@ candidates.list = lapply(ocr.true.error, get.candidate.vector, dictionary = dict
 toc = Sys.time()
 toc-tic 
 ocr.true.error.nonempty = ocr.true.error[lapply(candidates.list, length)>0]
-length(ocr.true.error.nonempty) #3073
+length(ocr.true.error.nonempty) #3105
 candidates.list.nonempty = candidates.list[lapply(candidates.list, length)>0]
-length(candidates.list.nonempty) #3073
+length(candidates.list.nonempty) #3105
 
 save(candidates.list, file = "../output/candidates_list.Rdata")
 save(candidates.list.nonempty, file = "../output/candidates_list_nonempty.Rdata")
@@ -181,6 +172,7 @@ file_names <- list.files(ground_true_loc)
 truth_list <- paste0(ground_true_loc, file_names)
 ocr_list <- paste0(tesseract_loc, file_names)
 ```
+
 ```{r}
 #cm = confusion_count_num("../data/ground_truth/group1_00000005.txt", "../data/tesseract/group1_00000005.txt")
 confusion.prob = confusion_count_num(truth_list, ocr_list, letterlist)
@@ -278,6 +270,7 @@ $$Score(w_{c}) = P(w_{c})\prod_{j}^{N}P(l_{j}^{f}|l_{j}^{s})$$
 cat("Error detected: ", ocr.true.error.nonempty[[4]], "\n")
 cat("Candidate list: ",candidates.list.nonempty[[4]], "\n")
 score_example = candidate.word.score(ocr.true.error.nonempty[[4]], candidates.list.nonempty[[4]], probability.topic, confusion.prob, beta.matrix)
+print(score_example)
 cat("Final choice: ", candidates.list.nonempty[[4]][which.max(score_example)])
 
 ```
@@ -327,8 +320,6 @@ save(corrected.text, file = "../output/corrected_text.Rdata")
 For performance measure, the two most common OCR accuracy measures are precision and recall. To be more specific, precision is the proportion of the correct number of correct items (i.e. both words and characters) and the number of items in OCR output. Recall means that the ratio of the number of correct items and the number of items in ground truth. Here, to compute the numbers, we just need to get the intersection part bewteen OCR output version (before and after improvement) and ground truth. In other words, the alignment in this case is not necessary.
 
 ```{r}
-
-load()
 #words
 ground.truth.vec = unlist(str_split(paste(ground.truth.all.text, collapse = " "), " "))
 ocr.vec = unlist(str_split(paste(ocr.all.text, collapse = " "), " "))
@@ -341,51 +332,17 @@ ground.truth.vec.char = ground.truth.vec.char[ground.truth.vec.char != " "]
 ocr.vec.char = unlist(str_split(paste(ocr.all.text, collapse = " "), ""))
 ocr.vec.char = ocr.vec.char[ocr.vec.char != " "]
 
-#ocr.final.vec.char = unlist(str_split(paste(ocr.final.output, collapse = " "), ""))
-#ocr.final.vec.char = ocr.final.vec.char[ocr.final.vec.char != " "]
-
 #intersect_words
 original.intersect.vec = vecsets::vintersect(tolower(ground.truth.vec), tolower(ocr.vec))
+
 final.intersect.vec = vecsets::vintersect(tolower(ground.truth.vec), tolower(ocr.final.vec))
 
 #intersect_char
-
-######
 ocr.intersect.vec.char = vecsets::vintersect(unlist(str_extract_all(ocr.vec, "[:graph:]")), unlist(str_extract_all(ground.truth.vec, "[:graph:]")))
 
 ocr.intersect.final.vec.char = vecsets::vintersect(unlist(str_extract_all(ocr.final.vec, "[:graph:]")), unlist(str_extract_all(ground.truth.vec, "[:graph:]")))
 
 # "[:graph:]" refers to any character defined as a printable character except those defined as part of the space character class. In this way, we can split the vectors into characters.
-
-#length(ocr.final.vec.char)/length(ground.truth.vec.char)
-
-#length(ocr.final.vec.char)/length(ocr.vec.char)
-
-######
-
-# original.intersect.vec.char = 0
-# 
-# for (i in 1:length(ocr.vec.char)){
-#   one = sum(ground.truth.vec.char[i] == ocr.vec.char[i])
-#   original.intersect.vec.char = original.intersect.vec.char + one
-# }
-# 
-# final.intersect.vec.char = 0
-# 
-# for (i in 1:length(ocr.final.vec.char)){
-#   one = sum(ground.truth.vec.char[i] == ocr.final.vec.char[i])
-#   final.intersect.vec.char = final.intersect.vec.char + one
-# }
-
-# original.intersect.vec.char
-# final.intersect.vec.char
-# 
-# text = ocr.vec.char[1:10]
-# text2 = ocr.vec.char[1:10]
-# text2[1] == text[1]
-
-
-#original.intersect.vec = vecsets::vintersect(tolower(ground.truth.vec), tolower(ocr.vec))
 
 ocr.performance.table = data.frame("ocr" = rep(NA, 4), "final_ocr"= rep(NA, 4))
 row.names(ocr.performance.table) = c("word_wise_recall", "word_wise_precision", "character_wise_recall", "character_wise_precision")
