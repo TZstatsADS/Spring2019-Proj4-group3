@@ -15,7 +15,7 @@ Term: Spring 2019
 * **Wu, Qianqian** qw2284@columbia.edu
 * **Zhang, Zhicheng** zz2555@columbia.edu
 
-**Project summary: **
+**Project summary:**
 
 In this project, we created an OCR post-processing procedure to enhance Tesseract OCR output. As the first step of post-processing we did **error detection** to identify incorrectly processed words. For that we use [Rule-based techniques](http://webpages.ursinus.edu/akontostathis/KulpKontostathisFinal.pdf), specifically rules are in the section 2.2. The code takes 100 documents, creates a single big corpus, which is splitted into two: one contains correct text elements, the other contains erroneous text elements. Only unique tokens are left for alanysis to reduce the amount of computation.To correct errors detected in the previous step, we followed the paper [Topic models](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=4377099). Error correction algorithm considered in the paper consists of two models: a topic model that provides information about word probabilities and OCR model that represents the probability of character errors. For each error word we compute a vector of candidates to substitute the erroneous word and pick the one that provides the best score according to the formula proposed in the paper. 
 	
