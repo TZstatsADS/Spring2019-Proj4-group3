@@ -110,7 +110,7 @@ ocr.tokens = str_split(ocr.all.text," ")
 ocr.tokens.unique = unique(ocr.tokens[[1]])
 ocr.boolean.if.clean = lapply(ocr.tokens.unique,Detection)
 ocr.boolean.if.clean = unlist(ocr.boolean.if.clean)
-ocr.error = ocr.tokens.unique[!ocr.boolean.if.clean] #6323
+ocr.error = ocr.tokens.unique[!ocr.boolean.if.clean] #6072
 ocr.correct = ocr.tokens.unique[ocr.boolean.if.clean]
 length(ocr.error)
 
@@ -350,6 +350,8 @@ final.intersect.vec = vecsets::vintersect(tolower(ground.truth.vec), tolower(ocr
 
 ######
 ocr.final.vec.char = vecsets::vintersect(unlist(str_extract_all(ocr.final.vec, "[:graph:]")), unlist(str_extract_all(ground.truth.vec, "[:graph:]")))
+
+ocr.vec.char = vecsets::vintersect(unlist(str_extract_all(ocr.vec, "[:graph:]")), unlist(str_extract_all(ground.truth.vec, "[:graph:]")))
 
 length(ocr.final.vec.char)/length(ground.truth.vec.char)
 
