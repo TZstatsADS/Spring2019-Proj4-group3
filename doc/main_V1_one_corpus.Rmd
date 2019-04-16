@@ -112,6 +112,8 @@ ocr.boolean.if.clean = lapply(ocr.tokens.unique,Detection)
 ocr.boolean.if.clean = unlist(ocr.boolean.if.clean)
 ocr.error = ocr.tokens.unique[!ocr.boolean.if.clean] #6323
 ocr.correct = ocr.tokens.unique[ocr.boolean.if.clean]
+length(ocr.error)
+
 
 save(ocr.error, file = "../output/tesseract_error.Rdata")
 save(ocr.correct, file = "../output/tesseract_correct.Rdata")
@@ -142,8 +144,8 @@ dictionary = unique(unlist(strsplit(ground.truth.all.text, split = " ")))
 #Removing intersection between dictionary and error vector
 
 not.in.dictionary.boolean = which(ocr.error %nin% dictionary)
-ocr.true.error = ocr.error[not.in.dictionary.boolean] #8046
-
+ocr.true.error = ocr.error[not.in.dictionary.boolean] #5576
+length(ocr.true.error)
 #using of grid provides many-fold time optimivation vs for-loop (0.07sec vs 10sec/error.word)
 tic  = Sys.time()
 candidates.list = lapply(ocr.true.error, get.candidate.vector, dictionary = dictionary) #dictionary_letters =  dictionary_letters if option above is active
@@ -161,6 +163,14 @@ save(ocr.true.error.nonempty, file = "../output/ocr_true_error_nonempty.Rdata")
 
 # Step 3.2 Generate confusion matrix.
 ```{r}
+load("../output/tesseract_error.Rdata") #ocr.error
+load("../output/tesseract_correct.Rdata") #ocr.correct
+load("../output/tesseract_full_data.Rdata") #ocr.all.text
+load("../output/ground_truth_full_data.Rdata") #ground.truth.all.text
+load("../output/candidates_list.Rdata") #candidates.list
+load("../output/candidates_list_nonempty.Rdata") #candidates.list.nonempty
+load("../output/ocr_true_error_nonempty.Rdata") #ocr.true.error.nonempty
+
 letterlist = get_letterlist(ocr.true.error.nonempty, candidates.list.nonempty)
 ```
 
@@ -174,10 +184,13 @@ ocr_list <- paste0(tesseract_loc, file_names)
 ```{r}
 #cm = confusion_count_num("../data/ground_truth/group1_00000005.txt", "../data/tesseract/group1_00000005.txt")
 confusion.prob = confusion_count_num(truth_list, ocr_list, letterlist)
+
+save(confusion.prob, file = "../output/confusion_prob.Rdata")
 #print(cm)
 ```
 
 # Step 3.3 Choose optimal number of Topics for LDA topic model.
+
 ```{r}
 gt <- Corpus(DirSource("../data/ground_truth"), readerControl = list(language = "english"))
 gt <- tm_map(gt, PlainTextDocument)
@@ -199,6 +212,10 @@ result <- FindTopicsNumber(
   verbose = TRUE
 )
 
+save(result, file = "../output/topic_number_finder.Rdata")
+
+load("../output/topic_number_finder.Rdata") #result
+
 FindTopicsNumber_plot(result)
 
 ```
@@ -207,9 +224,11 @@ FindTopicsNumber_plot(result)
 
 Single LDA model is trained using all text data out of 100 documents provided.
 ```{r}
-n.topics = 12 #optimal number of clusters based on the result above
+
+n.topics = 12 #optimal number of clusters based on the result above, might also be 11
 dtm.ground.truth = get.dtm(ground.truth.all.text) 
 lda = LDA(dtm.ground.truth, k = n.topics, method = "Gibbs", control = list(seed = 2019))
+
 ```
 
 # Step 3.5 Application of LDA topic model.
@@ -221,7 +240,7 @@ Probability of topics $P(t_{k})$ computed by applying the trained topic model to
 dtm.ocr = get.dtm(ocr.all.text)
 probability.topic.term = posterior(lda, dtm.ocr) 
 probability.topic = probability.topic.term$topics #P(t_k)
-beta.matrix = tidy(lda, matrix = "beta") #restart R if "Error: No tidy method for objects of class LDA_VEM", this is package bug
+beta.matrix = tidy(lda, matrix = "beta") #restart R if "Error: No tidy method for objects of class LDA_Gibbs", this is package bug
 ```
 
 Probability of a word given topic $P(w|t_{k})$ from candidate vector. This code is for display purposes ONLY, applied to all data within ocr.correct().
@@ -267,15 +286,27 @@ cat("Final choice: ", candidates.list.nonempty[[4]][which.max(score_example)])
 
 ```{r}
 
-#ocr.final.output = ocg.correct.text(candidates.list.nonempty, ocr.true.error.nonempty, ocr.all.text, probability.topic, confusion.prob, beta.matrix)
+finalist_list = c()
+for (i in 1:length(ocr.true.error.nonempty)){
+  score = candidate.word.score(ocr.true.error.nonempty[[i]], candidates.list.nonempty[[i]], probability.topic, confusion.prob, beta.matrix)
+  if (is.na(sum(score)) == F){ #4 gibbrish entities in the detected vector produce "NaN", eg 1618th element
+  finalist = candidates.list.nonempty[[i]][which.max(score)]
+  
+  }else{
+   finalist = candidates.list.nonempty[[i]][1] 
+  }
+  finalist_list = c(finalist_list, finalist)
+}
 
-#save(ocr.final.output, file = "../output/ocr_final_output.Rdata")
 
+length(finalist_list)
+length(ocr.true.error.nonempty)
+length(candidates.list.nonempty)
 
-error.corrected.vec = ocr.correct(ocr.true.error.nonempty, candidates.list.nonempty, probability.topic, confusion.prob, beta.matrix)
+save(finalist_list, file = "../output/final_output_vector.Rdata")
+
+compare.results.word = cbind(ocr.true.error.nonempty, finalist_list)
 ocr.all.text.vec = unlist(str_split(paste(ocr.all.text, collapse = " "), " "))
-
-compare.results.word = cbind(ocr.true.error.nonempty,error.corrected.vec)
 
 for (i in 1:length(ocr.all.text.vec)){
   for (j in 1:length(compare.results.word[,1])){
@@ -286,73 +317,9 @@ for (i in 1:length(ocr.all.text.vec)){
   }
 }
 
+corrected.text = paste(ocr.all.text.vec, collapse = " ")
+save(corrected.text, file = "../corrected_text.Rdata")
 
-
-score_ex = candidate.word.score(ocr.true.error.nonempty[[4]], candidates.list.nonempty[[4]], probability.topic, confusion.prob, beta.matrix)
-candidates.list.nonempty[[4]][which.max(score_ex)]
-
-ocr.final.output = paste(ocr.all.text.vec, collapse = " ")
-
-compare.results.word = cbind(ocr.true.error.nonempty,error.corrected.vec)
-
-
-
-ocr.correct = function(ocr.true.error.nonempty, candidates.list.nonempty, probability.topic, confusion.prob, beta.matrix){
-  #error.detected = c()
-  error.corrected = c()
-  for (i in 1:length(candidates.list.nonempty)){
-    candidate_score = lapply(ocr.true.error.nonempty[[4]], candidate.word.score, candidates.list.nonempty[[i]], probability.topic = probability.topic, confusion.prob = confusion.prob, beta.matrix = beta.matrix)
-    #
-    #print(candidates.list.nonempty[[i]])
-    #print(candidate.word.score)
-    candidate.word.score.max = candidates.list.nonempty[[4]][which.max(candidate_score)]
-    #error.detected = c(error.detected, )
-    error.corrected = c(error.corrected, candidate.word.score.max)
-    #ocr.all.text.vec = unlist(str_split(paste(ocr.all.text, collapse = " "), " "))
-    #corrected.text.vec = gsub(ocr.true.error.nonempty[[i]], candidate.word.score.max, ocr.all.text.vec, fixed=TRUE)
-  }
-  
-  #corrected.text = paste(corrected.text.vec, collapse = " ")
-  return(error.corrected)
-}
-
-
-
-
-# ocr.all.text.vec[1]
-# ocr.all.text <- mgsub(words, trans, ocr.all.text)
-# 
-# 
-# corrected.text.vec = gsub(ocr.true.error.nonempty[[i]], candidate.word.score.max, ocr.all.text.vec, fixed=TRUE)
-# ifelse(compare.results.word[5,1] %in% ocr.all.text.vec, )
-# 
-# compare.results.word[2,2]
-# 
-# compare.results.word = cbind(ocr.true.error.nonempty,error.corrected.vec)
-# typeof(compare.results.word)
-# head(compare.results.word)
-# ocr.all.text
-# compare.results.word[5,2]
-# 
-# ocr.true.error.nonempty
-# 
-# 
-# ocg.correct.text(candidates.list.nonempty[1:20], ocr.true.error.nonempty[1:20], ocr.all.text, probability.topic, confusion.prob, beta.matrix)
-# 
-# 
-# confusion.prob = 1
-# candidate.word.score = lapply(candidates.list.nonempty[[15]], candidate.word.score, probability.topic = probability.topic, confusion.prob = confusion.prob, beta.matrix = beta.matrix)
-# candidate.word.score.max = candidates.list.nonempty[[15]][which.max(candidate.word.score)]
-# ocr.all.text.vec = unlist(str_split(paste(ocr.all.text, collapse = " "), " "))
-# 
-# ocr.all.text.vec.corrected = gsub(ocr.true.error.nonempty[[15]], candidate.word.score.max, ocr.all.text.vec,ignore.case = TRUE, perl = TRUE, fixed=TRUE)
-# 
-# 
-# 
-# "working" %in% ocr.all.text.vec.corrected
-# "working" %in% ocr.all.text.vec
-# grep("working", corrected.text)
-# length(corrected.text[[1]])
 ```
 
 # Step 4 - Performance Measure
@@ -361,7 +328,7 @@ ocr.correct = function(ocr.true.error.nonempty, candidates.list.nonempty, probab
 #words
 ground.truth.vec = unlist(str_split(paste(ground.truth.all.text, collapse = " "), " "))
 ocr.vec = unlist(str_split(paste(ocr.all.text, collapse = " "), " "))
-ocr.final.vec = unlist(str_split(paste(ocr.final.output, collapse = " "), " "))
+ocr.final.vec = unlist(str_split(paste(corrected.text, collapse = " "), " "))
 
 #characters
 ground.truth.vec.char = unlist(str_split(paste(ground.truth.all.text, collapse = " "), ""))
@@ -370,37 +337,39 @@ ground.truth.vec.char = ground.truth.vec.char[ground.truth.vec.char != " "]
 ocr.vec.char = unlist(str_split(paste(ocr.all.text, collapse = " "), ""))
 ocr.vec.char = ocr.vec.char[ocr.vec.char != " "]
 
-ocr.final.vec.char = unlist(str_split(paste(ocr.final.output, collapse = " "), ""))
-ocr.final.vec.char = ocr.final.vec.char[ocr.final.vec.char != " "]
+#ocr.final.vec.char = unlist(str_split(paste(ocr.final.output, collapse = " "), ""))
+#ocr.final.vec.char = ocr.final.vec.char[ocr.final.vec.char != " "]
 
 #intersect_words
 original.intersect.vec = vecsets::vintersect(tolower(ground.truth.vec), tolower(ocr.vec))
 final.intersect.vec = vecsets::vintersect(tolower(ground.truth.vec), tolower(ocr.final.vec))
 
-#intersect_char___
+#intersect_char
 
+######
+ocr.final.vec.char = vecsets::vintersect(unlist(str_extract_all(ocr.final.vec, "[:graph:]")), unlist(str_extract_all(ground.truth.vec, "[:graph:]")))
 
-original.intersect.vec.char = 0
+length(ocr.final.vec.char)/length(ground.truth.vec.char)
 
-for (i in 1:length(ocr.vec.char)){
-  one = sum(ground.truth.vec.char[i] == ocr.vec.char[i])
-  original.intersect.vec.char = original.intersect.vec.char + one
-}
+length(ocr.final.vec.char)/length(ocr.vec.char)
+######
 
-final.intersect.vec.char = 0
-
-for (i in 1:length(ocr.final.vec.char)){
-  one = sum(ground.truth.vec.char[i] == ocr.final.vec.char[i])
-  final.intersect.vec.char = final.intersect.vec.char + one
-}
+# original.intersect.vec.char = 0
+# 
+# for (i in 1:length(ocr.vec.char)){
+#   one = sum(ground.truth.vec.char[i] == ocr.vec.char[i])
+#   original.intersect.vec.char = original.intersect.vec.char + one
+# }
+# 
+# final.intersect.vec.char = 0
+# 
+# for (i in 1:length(ocr.final.vec.char)){
+#   one = sum(ground.truth.vec.char[i] == ocr.final.vec.char[i])
+#   final.intersect.vec.char = final.intersect.vec.char + one
+# }
 
 # original.intersect.vec.char
 # final.intersect.vec.char
-# 
-# 
-# 
-# 
-# 
 # 
 # text = ocr.vec.char[1:10]
 # text2 = ocr.vec.char[1:10]
@@ -409,30 +378,20 @@ for (i in 1:length(ocr.final.vec.char)){
 
 #original.intersect.vec = vecsets::vintersect(tolower(ground.truth.vec), tolower(ocr.vec))
 
-#one = tolower(ground.truth.vec)
-#one = one[1:100]
-
-
 ocr.performance.table = data.frame("ocr" = rep(NA, 4), "final_ocr"= rep(NA, 4))
 row.names(ocr.performance.table) = c("word_wise_recall", "word_wise_precision", "character_wise_recall", "character_wise_precision")
 
 ocr.performance.table["word_wise_recall","ocr"] = length(original.intersect.vec)/length(ground.truth.vec)
 ocr.performance.table["word_wise_precision","ocr"] = length(original.intersect.vec)/length(ocr.vec)
 ocr.performance.table["word_wise_recall","final_ocr"] = length(final.intersect.vec)/length(ground.truth.vec)
-ocr.performance.table["word_wise_precision","final_ocr"] = length(final.intersect.vec)/length(ocr.vec)#check if denominator is correct
+ocr.performance.table["word_wise_precision","final_ocr"] = length(final.intersect.vec)/length(ocr.vec)
 
-
-ocr.performance.table["character_wise_recall","ocr"] = original.intersect.vec.char/length(ground.truth.vec.char)
-ocr.performance.table["character_wise_precision","ocr"] = original.intersect.vec.char/length(ocr.vec.char)
-ocr.performance.table["character_wise_recall","final_ocr"] = final.intersect.vec.char/length(ground.truth.vec.char)
-ocr.performance.table["character_wise_precision","final_ocr"] = final.intersect.vec.char/length(ocr.vec.char) #check if denominator is correct
+#ocr.performance.table["character_wise_recall","ocr"] = original.intersect.vec.char/length(ground.truth.vec.char)
+#ocr.performance.table["character_wise_precision","ocr"] = original.intersect.vec.char/length(ocr.vec.char)
+ocr.performance.table["character_wise_recall","final_ocr"] = length(ocr.final.vec.char)/length(ground.truth.vec.char)
+ocr.performance.table["character_wise_precision","final_ocr"] = length(ocr.final.vec.char)/length(ocr.vec.char)
 
 kable(ocr.performance.table, caption = "Summary of OCR performance")
-
-
-
-
-
 
 ```
 

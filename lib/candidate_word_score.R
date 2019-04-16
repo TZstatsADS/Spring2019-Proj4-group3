@@ -23,28 +23,9 @@ candidate.word.score = function(ocr_word, candidate_list_nonempty, probability.t
     candidate_word = candidate_list_nonempty[i]
     prob.confusion.matrix = get.confusion.score(ocr_word, candidate_word, confusion.prob)
     prb.word.in.topic = get.probability.word(candidate_word, beta.matrix)
-    score = c(score, sum(prb.word.in.topic*probability.topic)*prob.confusion.matrix*10^20)
+    score = c(score, sum(prb.word.in.topic*probability.topic)*log(prob.confusion.matrix))
   }
 
   return(unlist(score))
   #return(score)
-}
-
-ocr.correct = function(ocr.true.error.nonempty, candidates.list.nonempty, probability.topic, confusion.prob, beta.matrix){
-  #error.detected = c()
-  error.corrected = c()
-  for (i in 1:length(candidates.list.nonempty)){
-    candidate_score = lapply(ocr.true.error.nonempty[[i]], candidate.word.score, candidates.list.nonempty[[i]], probability.topic = probability.topic, confusion.prob = confusion.prob, beta.matrix = beta.matrix)
-    #
-    #print(candidates.list.nonempty[[i]])
-    #print(candidate.word.score)
-    candidate.word.score.max = candidates.list.nonempty[[i]][which.max(candidate_score)]
-    #error.detected = c(error.detected, )
-    error.corrected = c(error.corrected, candidate.word.score.max)
-    #ocr.all.text.vec = unlist(str_split(paste(ocr.all.text, collapse = " "), " "))
-    #corrected.text.vec = gsub(ocr.true.error.nonempty[[i]], candidate.word.score.max, ocr.all.text.vec, fixed=TRUE)
-  }
-  
-  #corrected.text = paste(corrected.text.vec, collapse = " ")
-  return(error.corrected)
 }
