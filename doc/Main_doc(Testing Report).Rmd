@@ -236,7 +236,7 @@ tic  = Sys.time()
 list.scores.word = c()
 for (i in 1:length(candidates.list.nonempty[[15]])){
   
-  prob.word.candidate = get.probability.word(candidates.list.nonempty[[15]][i], beta.matrix)#P(w|t_k)vector of 12 conditional probabilities
+  prob.word.candidate = get.probability.word(candidates.list.nonempty[[15]][i], beta.matrix)#P(w|t_k)vector of 13 conditional probabilities
   score = sum(prob.word.candidate * probability.topic) # sum of P(w|t_k)*P(t_k)
   list.scores.word = c(list.scores.word, score)
 }
