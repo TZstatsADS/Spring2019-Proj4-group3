@@ -4,7 +4,7 @@ get.probability.word = function(word, beta.matrix){
   candidate.matrix = filter(beta.matrix, beta.matrix$term == word)
   candidate.matrix = arrange(candidate.matrix, topic)
   probability.word.in.topic = candidate.matrix$beta
-  return(probability.word.in.topic) #P(w|t_k)vector of 12 conditional probabilities
+  return(probability.word.in.topic) #P(w|t_k)vector of 13 conditional probabilities
 }
 
 get.confusion.score = function(ocr_word, candidate_word, confusion.prob) {
